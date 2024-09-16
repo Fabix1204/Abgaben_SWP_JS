@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FIFA Team Selection</title>
+    <script src="data/teams_fifa22.js"></script>
+    <script src="data/players_fifa23.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #team1_list, #team2_list {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #eef;
+            border-radius: 5px;
+        }
+
+        #player_img {
+            display: block;
+            max-width: 150px;
+            margin: 20px auto;
+            border-radius: 10px;
+            border: 2px solid #ccc;
+        }
+
+        #player_info {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #player_name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #player_nationality, #player_club {
+            font-size: 16px;
+        }
+
+        #club_logo {
+            max-width: 50px;
+            margin-top: 10px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>FIFA Team Selection</h1>
+
+    <div class="container">
+        <label for="teams">Select a Team:</label>
+        <select id="teams">
+        </select>
+
+        <label for="team_members">Select a Player:</label>
+        <select id="team_members">
+        </select>
+
+        <div class="button-container">
+            <button id="t1" onclick="addToTeam(1)">
+                Add to Team 1
+            </button>
+
+            <button id="t2" onclick="addToTeam(2)">
+                Add to Team 2
+            </button>
+        </div>
+
+        <div class="button-container">
+            <button onclick="removeFromTeam(1)">
+                Remove from Team 1
+            </button>
+
+            <button onclick="removeFromTeam(2)">
+                Remove from Team 2
+            </button>
+        </div>
+
+        <img id="player_img" alt="Player Image">
+
+        <div id="player_info">
+            <div id="player_name"></div>
+            <div id="player_nationality"></div>
+            <div id="player_club"></div>
+            <img id="club_logo" alt="Club Logo">
+        </div>
+
+        <div id="team1_list">Team 1: </div>
+        <div id="team2_list">Team 2: </div>
+
+        <div id="error_message" class="error"></div>
+    </div>
+
+    <script>
+        let team1 = [];
+        let team2 = [];
+        const MAX_PLAYERS = 11;
+
+        function addToTeam(teamNumber) {
+            let team_members_sel = document.getElementById("team_members");
+            let playerName = team_members_sel.options[team_members_sel.selectedIndex].text;
+            let error_message = document.getElementById("error_message");
+
+            if (teamNumber === 1) {
+                if (team1.length >= MAX_PLAYERS) {
+                    error_message.innerHTML = "Team 1 has reached the maximum number of players (11).";
+                    return;
+                }
+                if (!team1.includes(playerName)) {
+                    team1.push(playerName);
+                    error_message.innerHTML = "";
+                }
+            } else if (teamNumber === 2) {
+                if (team2.length >= MAX_PLAYERS) {
+                    error_message.innerHTML = "Team 2 has reached the maximum number of players (11).";
+                    return;
+                }
+                if (!team2.includes(playerName)) {
+                    team2.push(playerName);
+                    error_message.innerHTML = "";
+                }
+            }
+
+            updateTeamsDisplay();
+        }
+
+        function updateTeamsDisplay() {
+            let team1List = document.getElementById("team1_list");
+            let team2List = document.getElementById("team2_list");
+
+            team1List.innerHTML = "Team 1: " + team1.join(', ');
+            team2List.innerHTML = "Team 2: " + team2.join(', ');
+        }
+
+        function removeFromTeam(teamNumber) {
+            let team_members_sel = document.getElementById("team_members");
+            let playerName = team_members_sel.options[team_members_sel.selectedIndex].text;
+
+            if (teamNumber === 1) {
+                team1 = team1.filter(player => player !== playerName);
+            } else if (teamNumber === 2) {
+                team2 = team2.filter(player => player !== playerName);
+            }
+
+            updateTeamsDisplay();
+        }
+
+        function change_teams(e) {
+            let teams_sel = e.target;
+            let selectedTeamName = teams_sel.options[teams_sel.selectedIndex].text;
+
+            let team_members_sel = document.getElementById("team_members");
+            let current_players = players.filter(p => p.Club === selectedTeamName);
+            team_members_sel.innerHTML = "";
+
+            current_players.forEach(player => {
+                team_members_sel.add(new Option(player.Name, player.ID));
+            });
+
+            if (team_members_sel.options.length > 0) {
+                team_members_sel.selectedIndex = 0;
+                change_team_player({ target: team_members_sel });
+            }
+        }
+
+        function change_team_player(e) {
+            let player_sel = e.target;
+            let selectedPlayerName = player_sel.options[player_sel.selectedIndex].text;
+
+            let curr_player = players.find(p => p.Name === selectedPlayerName);
+            let player_img = document.getElementById("player_img");
+            let player_name = document.getElementById("player_name");
+            let player_nationality = document.getElementById("player_nationality");
+            let player_club = document.getElementById("player_club");
+            let club_logo = document.getElementById("club_logo");
+
+            player_img.src = curr_player.Photo;
+            player_name.innerHTML = curr_player.Name;
+            player_nationality.innerHTML = "Nationality: " + curr_player.Nationality;
+            player_club.innerHTML = "Club: " + curr_player.Club;
+            club_logo.src = curr_player["Club Logo"];
+        }
+
+        let teams_sel = document.getElementById("teams");
+        teams.forEach(team => teams_sel.add(new Option(team.Name, team.ID)));
+        teams_sel.addEventListener("change", change_teams);
+
+        if (teams.length > 0) {
+            let firstTeamEvent = new Event('change');
+            teams_sel.dispatchEvent(firstTeamEvent);
+        }
+
+        let team_members_sel = document.getElementById("team_members");
+        team_members_sel.addEventListener("change", change_team_player);
+
+    </script>
+</body>
+</html>
