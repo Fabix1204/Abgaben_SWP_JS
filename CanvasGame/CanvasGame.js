@@ -10,7 +10,7 @@ let game = {
         this.player = new sprite(30, 30, 10, 120, "/img/face-monkey.png");
         this.enemies = [];
         this.bonus = null;
-        this.keys = { left: false, up: false, right: false, down: false }; // Track multiple key presses
+        this.keys = { left: false, up: false, right: false, down: false };
         this.startTime = Date.now();
         this.time = 0;
         this.Score = 0;
@@ -74,19 +74,17 @@ function start() {
     game.start();
 }
 
-// Sprite constructor
 function sprite(width, height, x, y, imageSrc) {
     this.width = width;
     this.height = height;
     this.x = x;
     this.y = y;
-    this.image = new Image(); // Create a new image object
-    this.image.src = imageSrc; // Load the image
+    this.image = new Image();
+    this.image.src = imageSrc;
 
     this.redraw = function() {
         ctx = game.context;
         if (this.image.complete) {
-            // Draw the image if it is loaded
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
         }
     }
@@ -96,29 +94,24 @@ function redraw() {
     game.clear();
     game.updateTime();
 
-    // Player movement (allows diagonal movement)
     if (game.keys.left) game.player.x -= 3;
     if (game.keys.up) game.player.y -= 3;
     if (game.keys.right) game.player.x += 3;
     if (game.keys.down) game.player.y += 3;
 
-    // Prevent player from moving outside the canvas
     game.preventOutOfBounds();
 
-    // Redraw player
     game.player.redraw();
 
-    // Move and redraw enemies
     game.enemies.forEach((e) => {
-        let yDelta = Math.floor(Math.random() * 11) - 5; // Random vertical movement
-        e.x -= 1; // Move left
+        let yDelta = Math.floor(Math.random() * 11) - 5;
+        e.x -= 1;
         e.y += yDelta;
         e.redraw();
     });
 
-    // Move and redraw bonus (if it exists)
     if (game.bonus) {
-        game.bonus.x -= 1; // Move left
+        game.bonus.x -= 1;
         game.bonus.redraw();
     }
 
