@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://unpkg.com/vue@3"></script>
+        <title>Hangman</title>
+        <style>
+            /* Allgemeine Layout-Stile */
+            body {
+                font-family: 'Arial', sans-serif;
+                background-color: #f4f4f9;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                box-sizing: border-box;
+            }
+    
+            #app {
+                text-align: center;
+                background-color: #fff;
+                border-radius: 10px;
+                padding: 30px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                width: 60%; /* Für größere Bildschirmbreite */
+                max-width: 800px; /* Maximalbreite für größere Displays */
+                min-width: 500px; /* Minimale Breite für kleinere Displays */
+            }
+    
+            h1 {
+                font-size: 2.5rem;
+                color: #333;
+            }
+    
+            p {
+                font-size: 1.2rem;
+                color: #555;
+            }
+    
+            /* Button-Stile */
+            button {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 12px 25px;
+                margin: 8px;
+                font-size: 1.2rem;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.3s ease, transform 0.2s ease;
+            }
+    
+            button:disabled {
+                background-color: #ddd;
+                cursor: not-allowed;
+            }
+    
+            button:hover {
+                background-color: #45a049;
+                transform: scale(1.05);
+            }
+    
+            /* Container für Bild und Cheat Button */
+            .game-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                margin-top: 20px;
+            }
+    
+            /* Hangman Bild zentrieren */
+            img {
+                width: 250px;
+                height: 250px;
+                margin: 30px 0;
+            }
+    
+            /* Zeit- und Highscore-Stile */
+            .time-score {
+                margin-top: 30px;
+            }
+    
+            .highscore p {
+                font-size: 1.2rem;
+                color: #333;
+            }
+    
+            .game-header {
+                margin-bottom: 20px;
+            }
+    
+            /* Responsives Design */
+            @media (max-width: 768px) {
+                #app {
+                    width: 80%;
+                }
+                button {
+                    font-size: 1rem;
+                    padding: 8px 16px;
+                }
+                img {
+                    width: 200px;
+                    height: 200px;
+                }
+            }
+        </style>
+    </head>
+<body>
+    <div id="app">
+        <h1 class="game-header">Hangman</h1>
+        <p>{{ displayedWord }}</p>
+        <div>
+            <button v-for="letter in letters" :key="letter" @click="check(letter)" :disabled="usedLetters.includes(letter)">
+                {{ letter }}
+            </button>
+        </div>
+        <p>{{ text }}</p>
+    
+        <!-- Container für Bild und Cheat Button -->
+        <div class="game-content">
+            <!-- Hangman Bild in der Mitte -->
+            <img :src="currentHangman">
+            
+            <!-- Cheat Button zentriert -->
+            <button @click="showWord = true">Cheat</button>
+        </div>
+    
+        <p v-if="showWord">{{ currentWord }}</p>
+        
+        <!-- Reset Button -->
+        <button @click="resetGame">Reset</button>
+        
+        <!-- Time and Highscore -->
+        <div class="time-score">
+            <p>Time: {{ time }} seconds</p>
+            
+            <!-- Display Highest Highscore -->
+            <div class="highscore">
+                <h3>Highscore</h3>
+                <p v-if="highestScore !== null">Best Time: {{ highestScore }} seconds</p>
+                <p v-if="highestScore === null">No Highscore yet.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="data/wordlist.js"></script>
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    letters: Array.from(Array(26)).map((e, i) => String.fromCharCode(i + 65)),
+                    wordlist: wordlist,
+                    currentHangman: "img/0.jpg",
+                    currentWord: "",
+                    usedLetters: [],
+                    displayedWord: "",
+                    incorrectGuesses: 0,
+                    maxIncorrect: 10, // Maximale Anzahl falscher Versuche
+                    text: "Guess!",
+                    isGameOver: false, // Zustand des Spiels
+                    showWord: false,
+                    time: 0, // Timer für die Spielzeit
+                    timerInterval: null, // Für den Timer
+                    highestScore: this.loadHighestScore() // Laden des höchsten Scores
+                }
+            },
+            methods: {
+                randomWord() {
+                    return this.wordlist[Math.floor(Math.random() * this.wordlist.length)].toUpperCase(); // Wort in Großbuchstaben
+                },
+                check(letter) {
+                    this.usedLetters.push(letter);
+            
+                    if (this.currentWord.includes(letter)) {
+                        // Ersetze die Unterstriche durch den richtigen Buchstaben
+                        this.displayedWord = this.currentWord.split("").map(l => this.usedLetters.includes(l) ? l : "_").join(" ");
+                    } else {
+                        this.incorrectGuesses++;
+                        this.currentHangman = `img/${this.incorrectGuesses}.jpg`;
+                    }
+            
+                    // Überprüfe, ob das Spiel verloren wurde
+                    if (this.incorrectGuesses >= this.maxIncorrect) {
+                        this.text = "You lost! The word was: " + this.currentWord;
+                        this.isGameOver = true; // Spiel ist vorbei
+                        this.stopTimer(false); // Kein Highscore speichern, weil verloren
+                    }
+            
+                    // Überprüfe, ob das Spiel gewonnen wurde
+                    if (!this.displayedWord.includes("_")) {
+                        this.text = "You won!";
+                        this.isGameOver = true; // Spiel ist vorbei
+                        this.stopTimer(true); // Highscore speichern, weil gewonnen
+                    }
+                },
+                resetGame() {
+                    this.currentWord = this.randomWord();
+                    this.usedLetters = [];
+                    this.displayedWord = "_ ".repeat(this.currentWord.length).trim(); // Unterstriche für das neue Wort
+                    this.incorrectGuesses = 0;
+                    this.currentHangman = "img/0.jpg";
+                    this.text = "Guess!";
+                    this.isGameOver = false; // Spiel ist nicht mehr vorbei
+                    this.time = 0; // Timer zurücksetzen
+                    this.startTimer(); // Timer neu starten
+                    this.showWord = false;
+                },
+                startTimer() {
+                    // Sicherstellen, dass der Timer nicht bereits läuft
+                    if (this.timerInterval !== null) {
+                        clearInterval(this.timerInterval); // Entfernen des vorherigen Intervalls
+                    }
+            
+                    this.timerInterval = setInterval(() => {
+                        this.time++;
+                    }, 1000); // Timer läuft jede Sekunde
+                },
+                stopTimer(isGameWon) {
+                    if (this.timerInterval !== null) {
+                        clearInterval(this.timerInterval); // Stoppe den Timer
+                        this.timerInterval = null; // Setze die Interval-Variable zurück
+                    }
+            
+                    if (isGameWon) {
+                        this.updateHighestScore();
+                    }
+                },
+                updateHighestScore() {
+                    if (this.highestScore === null || this.time < this.highestScore) {
+                        this.highestScore = this.time;
+                        this.saveHighestScore();
+                    }
+                },
+                saveHighestScore() {
+                    // Speichere den höchsten Wert im localStorage
+                    localStorage.setItem('hangmanHighestScore', this.highestScore);
+                },
+                loadHighestScore() {
+                    // Lade den höchsten Wert aus dem localStorage
+                    const storedScore = localStorage.getItem('hangmanHighestScore');
+                    return storedScore ? parseInt(storedScore) : null;
+                }
+            },
+            created() {
+                this.resetGame(); // Initialisiere das Spiel bei der Erstellung
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
